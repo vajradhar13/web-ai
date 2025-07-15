@@ -1,103 +1,178 @@
-import Image from "next/image";
+'use client'
+
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowRight, Sparkles, Bot, FileText, MessageCircle, FileSearch } from "lucide-react";
+import Carousel from "@/components/ui/carousel";
+
+// Generic AI Logo/Icon
+function AILogo() {
+  return (
+    <span className="flex items-center gap-2 text-primary">
+      <Bot className="h-7 w-7" />
+      <span className="sr-only">AI Assistant</span>
+    </span>
+  );
+}
+
+// Redesigned Navbar
+function Navbar() {
+  return (
+    <nav className="w-full flex items-center justify-between py-4 px-6 border-b border-neutral-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <AILogo />
+      <div className="flex gap-4">
+        <Link href="/chatbot" className="flex items-center gap-1 text-sm font-medium text-neutral-700 hover:text-primary transition-colors">
+          <MessageCircle className="h-4 w-4" /> Chatbot
+        </Link>
+        <Link href="/document-qa" className="flex items-center gap-1 text-sm font-medium text-neutral-700 hover:text-primary transition-colors">
+          <FileSearch className="h-4 w-4" /> Document QA
+        </Link>
+        <Link href="/summarize" className="flex items-center gap-1 text-sm font-medium text-neutral-700 hover:text-primary transition-colors">
+          <FileText className="h-4 w-4" /> Summarize
+        </Link>
+      </div>
+      <Button asChild variant="default" size="sm">
+        <Link href="/summarize">Try Now</Link>
+      </Button>
+    </nav>
+  );
+}
+
+// HeroSection (no product name, just AI/assistant theme)
+function HeroSection() {
+  return (
+    <div className="relative overflow-hidden py-20 md:py-24 lg:py-32">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-background -z-10" />
+      <div className="px-4 md:px-6">
+        <div className="flex flex-col items-center text-center space-y-8">
+          
+          <div className="flex items-center gap-3 mb-2">
+            <AILogo />
+          </div>
+          <p className="text-xl font-medium text-primary">
+            Your Smart AI Assistant for Documents & Conversations
+          </p>
+          <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+            Summarize PDFs, ask questions about documents, and chat with an intelligent assistant—all in one place.
+          </p>
+          <Button asChild variant="default" size="lg" className="group">
+            <Link href="#carousel" className="flex items-center gap-2">
+              Explore Features
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturesSection() {
+  return (
+    <section id="features" className="py-16 w-full">
+      <div className="mx-auto px-4 md:px-6 max-w-5xl">
+        <h2 className="text-3xl font-bold text-center mb-8">Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <FileText className="h-8 w-8 text-primary mb-2" />
+            <h3 className="font-semibold text-lg mb-1">PDF Summarization</h3>
+            <p className="text-sm text-muted-foreground text-center">Upload any text-based PDF and get a concise summary powered by AI.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <FileSearch className="h-8 w-8 text-primary mb-2" />
+            <h3 className="font-semibold text-lg mb-1">Document Q&A</h3>
+            <p className="text-sm text-muted-foreground text-center">Ask questions about your documents and get instant, accurate answers.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <MessageCircle className="h-8 w-8 text-primary mb-2" />
+            <h3 className="font-semibold text-lg mb-1">Chatbot</h3>
+            <p className="text-sm text-muted-foreground text-center">Chat with an intelligent assistant for any topic or task.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// CarouselComp with slides
+export function CarouselComp() {
+  const slideData = [
+    {
+      title: "Summarization",
+      button: "Explore",
+      src: "/asssets/summarization.png",
+      path: "summarize"
+    },
+    {
+      title: "Q & A Chatbot",
+      button: "Explore",
+      src: "/asssets/chatbot.png",
+      path: "/chatbot"
+    },
+  ];
+
+  return (
+    <div className="relative overflow-hidden w-full h-full py-20">
+      <Carousel slides={slideData} />
+    </div>
+  );
+}
+
+function ModelSection() {
+  return (
+    <section id="models" className="py-16 w-full">
+      <div className="mx-auto px-4 md:px-6 max-w-5xl">
+        <h2 className="text-3xl font-bold text-center mb-8">AI Models</h2>
+        <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+          <div className="bg-white rounded-lg shadow p-6 flex-1 min-w-[250px]">
+            <h3 className="font-semibold text-lg mb-2">Gemini 1.5 Flash</h3>
+            <p className="text-sm text-muted-foreground">Fast, accurate, and cost-effective for summarization and Q&A.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex-1 min-w-[250px]">
+            <h3 className="font-semibold text-lg mb-2">Coming Soon</h3>
+            <p className="text-sm text-muted-foreground">More advanced models and features will be added soon.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="w-full py-8 border-t border-neutral-200 bg-white/80 text-center text-sm text-muted-foreground mt-8">
+      &copy; {new Date().getFullYear()} AI Assistant. All rights reserved.
+    </footer>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen flex flex-col w-full bg-background">
+      <Navbar />
+      <main className="flex-1 w-full">
+        {/* Main container with centered content and consistent padding */}
+        <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <HeroSection />
+          <FeaturesSection />
+          {/* Carousel section with improved spacing */}
+          <section id="carousel" className="py-16 bg-background w-full">
+            <div className="mx-auto px-4 md:px-6 max-w-7xl">
+              <div className="flex flex-col items-center text-center space-y-4 mb-12">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                  Explore Our Capabilities
+                </h2>
+                <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  See the AI Assistant in action with these interactive examples
+                </p>
+              </div>
+              <CarouselComp />
+            </div>
+          </section>
+          <ModelSection />
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Footer />
     </div>
   );
 }
