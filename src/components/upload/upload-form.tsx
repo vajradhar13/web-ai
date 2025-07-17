@@ -88,10 +88,10 @@ export default function Uploadform() {
         if (sumData.summary) {
           setSummary(sumData.summary);
         } else {
-          toast.error(sumData.error || "Failed to generate summary");
+          toast.error(  "Failed to generate summary");
         }
       } else {
-        toast.error(data.error || "Failed to extract PDF text");
+        toast.error(  "Failed to extract PDF text");
       }
     } catch {
       setLoading(false);
