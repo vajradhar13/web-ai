@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Bot, User } from "lucide-react";
+import { useUploadThing } from "@/utils/uploadthing";
 
 function Avatar({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -21,69 +21,103 @@ export default function DocumentQAPage() {
     { role: "assistant", text: "Upload a text-based PDF document and ask a question about its content!" },
   ]);
   const [input, setInput] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [extractedText, setExtractedText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { startUpload } = useUploadThing("pdfUploader", {
+    onClientUploadComplete: () => {},
+    onUploadError: () => {
+      setError("Something went wrong during upload");
+    },
+    onUploadBegin: () => {},
+  });
 
-  const sendQuestion = async () => {
-    if (!input.trim() || !file) {
-      setError("Please provide both a PDF file and a question.");
-      return;
-    }
-
-    // Validate file size (e.g., max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError("File size exceeds 10MB. Please upload a smaller PDF.");
-      return;
-    }
-
-    // Validate question length (e.g., max 500 characters)
-    if (input.length > 500) {
-      setError("Question is too long. Please keep it under 500 characters.");
-      return;
-    }
-
-    const userMessage = { role: "user", text: input };
-    setMessages((msgs) => [...msgs, userMessage]);
-    setInput("");
-    setError("");
+  const handleFileUpload = async (file: File) => {
     setLoading(true);
-
+    setError("");
+    setExtractedText(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("question", input);
-
-      const res = await axios.post("/api/v1/document-qa", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (res.data.error) {
-        setError(res.data.error);
-        setMessages((msgs) => [
-          ...msgs,
-          { role: "assistant", text: `Error: ${res.data.error}` },
-        ]);
-      } else {
-        setMessages((msgs) => [...msgs, { role: "assistant", text: res.data.output || "No response" }]);
-        // Clear file input after successful submission
-        setFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
+      const resp = await startUpload([file]);
+      if (!resp || !resp[0]) {
+        setError("File upload failed");
+        setLoading(false);
+        return;
       }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || "Could not process the document.";
-      setError(errorMessage);
-      setMessages((msgs) => [...msgs, { role: "assistant", text: `Error: ${errorMessage}` }]);
+      const fileUrl = resp[0].serverData?.fileUrl || resp[0].url;
+      if (!fileUrl) {
+        setError("File URL missing after upload");
+        setLoading(false);
+        return;
+      }
+      const extractResp = await fetch("/api/extract-pdf-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      const extractData = await extractResp.json();
+      if (!extractData.pdfText || extractData.pdfText.trim().length < 20) {
+        setError(extractData.error || "Failed to extract PDF text");
+        setLoading(false);
+        return;
+      }
+      setExtractedText(extractData.pdfText);
+      setMessages([
+        { role: "assistant", text: "Document uploaded and processed! Now ask your questions about its content." },
+      ]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch {
+      setError("Could not process the document.");
     } finally {
       setLoading(false);
     }
   };
 
+  const sendQuestion = async () => {
+    if (!input.trim() || !extractedText) {
+      setError("Please upload a PDF and provide a question.");
+      return;
+    }
+    if (input.length > 500) {
+      setError("Question is too long. Please keep it under 500 characters.");
+      return;
+    }
+    const userMessage = { role: "user", text: input };
+    setMessages((msgs) => [...msgs, userMessage]);
+    setInput("");
+    setError("");
+    setLoading(true);
+    try {
+      const qaResp = await fetch("/api/v1/document-qa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: extractedText, question: userMessage.text }),
+      });
+      const qaData = await qaResp.json();
+      setLoading(false);
+      if (qaData.error) {
+        setError(qaData.error);
+        setMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", text: `Error: ${qaData.error}` },
+        ]);
+      } else {
+        setMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", text: qaData.output || "No response" },
+        ]);
+      }
+    } catch {
+      setLoading(false);
+      setError("Could not process the document.");
+      setMessages((msgs) => [...msgs, { role: "assistant", text: `Error: Could not process the document.` }]);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading) {
+    if (e.key === "Enter" && !loading && extractedText) {
       sendQuestion();
     }
   };
@@ -137,9 +171,14 @@ export default function DocumentQAPage() {
             <input
               type="file"
               ref={fileInputRef}
-              accept="application/pdf" // Restrict to PDFs
+              accept="application/pdf"
               className="flex-1 text-white bg-neutral-900 border border-neutral-700 rounded px-2 py-1"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const selectedFile = e.target.files?.[0] || null;
+                if (selectedFile) {
+                  handleFileUpload(selectedFile);
+                }
+              }}
               disabled={loading}
             />
             <Button
@@ -154,13 +193,13 @@ export default function DocumentQAPage() {
             <input
               className="flex-1 px-4 py-2 rounded bg-neutral-900 text-white outline-none border border-neutral-700"
               type="text"
-              placeholder="Ask a question about the document..."
+              placeholder={extractedText ? "Ask a question about the document..." : "Upload a PDF to begin..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={loading || !file}
+              disabled={loading || !extractedText}
             />
-            <Button onClick={sendQuestion} disabled={loading || !input.trim() || !file}>
+            <Button onClick={sendQuestion} disabled={loading || !input.trim() || !extractedText}>
               {loading ? "..." : "Send"}
             </Button>
           </div>
