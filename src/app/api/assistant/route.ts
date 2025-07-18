@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const { text, fileUrl, mode } = await req.json();
+    const body = await req.json();
+    const { text, fileUrl, mode, question } = body;
     const selectedMode = mode || 'chat';
 
     if (selectedMode === 'summarize') {
@@ -58,16 +59,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ summary: summary.trim() });
     } else if (selectedMode === 'qa') {
       // Document QA mode
-      let docText = text;
-      if (!docText && fileUrl) {
-        docText = await fetchAndExtractPdfText(fileUrl);
+      let documentText = text;
+      if (!documentText && fileUrl) {
+        documentText = await fetchAndExtractPdfText(fileUrl);
       }
-      if (!docText || typeof docText !== "string" || docText.trim().length < 20) {
+      if (!documentText || typeof documentText !== "string" || documentText.trim().length < 20) {
         return NextResponse.json({ error: "No valid document text provided for QA." }, { status: 400 });
       }
-      // For QA, require a question (use 'text' as question)
-      const question = text;
-      const textChunks = chunkText(docText);
+      if (!question || typeof question !== "string" || question.trim().length < 1) {
+        return NextResponse.json({ error: "No valid question provided for QA." }, { status: 400 });
+      }
+      const textChunks = chunkText(documentText);
       const chunkResponses: string[] = [];
       for (const chunk of textChunks) {
         const prompt = `${DOCUMENT_QA_PROMPT}\n\n---\n\nDocument:\n${chunk}\n\nQuestion:\n${question}`;
@@ -82,16 +84,7 @@ export async function POST(req: NextRequest) {
           throw err;
         }
       }
-      // Deduplicate fallback and real answers
-      const realAnswers = chunkResponses.filter(r => !/^❌\s*\*\*Not Available\*\*/.test(r.trim()));
-      let output = "";
-      if (realAnswers.length > 0) {
-        const uniqueAnswers = Array.from(new Set(realAnswers.map(a => a.trim())));
-        output = uniqueAnswers.join("\n\n");
-      } else {
-        const firstFallback = chunkResponses.find(r => /^❌\s*\*\*Not Available\*\*/.test(r.trim()));
-        output = firstFallback || chunkResponses[0] || "No answer found.";
-      }
+      const output = chunkResponses.join("\n\n");
       return NextResponse.json({ output: output.trim() });
     } else {
       // Chat mode (default)
